@@ -26,6 +26,8 @@
         el.textContent = text;
         el.style.display = text ? 'block' : 'none';
       },
+      // CI replaces __BUILD__ with the commit id, so a new deploy never mixes with cached files.
+      locateFile: function (path) { return path + '?v=__BUILD__'; },
       onRuntimeInitialized: function () { document.getElementById('canvas').focus(); }
     };
     window.addEventListener('keydown', function (e) {
