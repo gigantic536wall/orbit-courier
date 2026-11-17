@@ -78,6 +78,7 @@ TEST_CASE("the engine accelerates along the heading and burns fuel") {
         world.step({.thrust = true});
     }
     CHECK(world.ship().velocity.x == doctest::Approx(world.spec().thrust).epsilon(0.01));
+    CHECK(world.ship().fuel < 1.0);
     CHECK(world.ship().velocity.y == doctest::Approx(0.0));
     CHECK(world.ship().fuel == doctest::Approx(1.0 - world.spec().fuelPerSecond).epsilon(0.01));
 }

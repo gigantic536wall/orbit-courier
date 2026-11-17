@@ -1,4 +1,4 @@
-add_executable(orbit_courier main.cpp)
+add_executable(orbit_courier main.cpp app.cpp)
 target_link_libraries(orbit_courier PRIVATE oc_core oc_warnings raylib)
 
 if(MSVC)
