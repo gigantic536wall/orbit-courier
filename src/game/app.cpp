@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <initializer_list>
 #include <string>
 
 namespace game {
@@ -154,18 +155,27 @@ oc::Input App::flightInput() const {
 }
 
 void App::handleInput() {
-    const bool confirm = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) || IsKeyPressed(KEY_SPACE);
+    // Read the key queue instead of IsKeyPressed: a quick tap can start and end between two frames
+    // (especially in the browser), and the queue still remembers it.
+    std::vector<int> keys;
+    for (int key = GetKeyPressed(); key != 0; key = GetKeyPressed()) {
+        keys.push_back(key);
+    }
+    auto pressed = [&](std::initializer_list<int> wanted) {
+        return std::any_of(keys.begin(), keys.end(), [&](int k) { return std::find(wanted.begin(), wanted.end(), k) != wanted.end(); });
+    };
+    const bool confirm = pressed({KEY_ENTER, KEY_KP_ENTER, KEY_SPACE});
     auto restart = [&] {
         startLevel(levelIndex_);
         screen_ = Screen::Playing;
         overview_ = false;
     };
 
-    if (IsKeyPressed(KEY_RIGHT_BRACKET) && levelIndex_ + 1 < levels_.size()) {
+    if (pressed({KEY_RIGHT_BRACKET}) && levelIndex_ + 1 < levels_.size()) {
         startLevel(levelIndex_ + 1);
         return;
     }
-    if (IsKeyPressed(KEY_LEFT_BRACKET) && levelIndex_ > 0) {
+    if (pressed({KEY_LEFT_BRACKET}) && levelIndex_ > 0) {
         startLevel(levelIndex_ - 1);
         return;
     }
@@ -178,25 +188,25 @@ void App::handleInput() {
         }
         break;
     case Screen::Playing:
-        if (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE)) {
+        if (pressed({KEY_P, KEY_ESCAPE})) {
             screen_ = Screen::Paused;
-        } else if (IsKeyPressed(KEY_R)) {
+        } else if (pressed({KEY_R})) {
             restart();
-        } else if (IsKeyPressed(KEY_TAB) || IsKeyPressed(KEY_M)) {
+        } else if (pressed({KEY_TAB, KEY_M})) {
             overview_ = !overview_;
         }
         break;
     case Screen::Paused:
-        if (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE) || confirm) {
+        if (pressed({KEY_P, KEY_ESCAPE}) || confirm) {
             screen_ = Screen::Playing;
-        } else if (IsKeyPressed(KEY_R)) {
+        } else if (pressed({KEY_R})) {
             restart();
         }
         break;
     case Screen::Result:
         if (mission_.state() == oc::MissionState::Complete && confirm) {
             startLevel((levelIndex_ + 1) % levels_.size());
-        } else if (IsKeyPressed(KEY_R) || confirm) {
+        } else if (pressed({KEY_R}) || confirm) {
             restart();
         }
         break;
