@@ -17,7 +17,9 @@ if(MSVC)
     target_compile_options(oc_warnings INTERFACE /W4 /WX /permissive- /utf-8)
 else()
     # -ffp-contract=off: no fused multiply-add, so the simulation gives the same numbers on every compiler.
-    target_compile_options(oc_warnings INTERFACE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Werror -ffp-contract=off)
+    # -Wno-missing-field-initializers: designated initializers may skip members that have defaults (C++20 style).
+    target_compile_options(oc_warnings INTERFACE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Werror -ffp-contract=off
+        -Wno-missing-field-initializers)
 endif()
 
 add_subdirectory(src/core)
