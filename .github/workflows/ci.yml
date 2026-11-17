@@ -40,7 +40,8 @@ jobs:
           cp build-web/src/game/index.html build-web/src/game/index.js build-web/src/game/index.wasm site/
           build=${GITHUB_SHA::8}
           grep -o "<script[^>]*index.js[^>]*>" site/index.html
-          sed -i -E "s/__BUILD__/$build/g; s/(src=.)index\.js/\1index.js?v=$build/" site/index.html
+          # Emscripten minifies the page, so the attribute may be unquoted: src=index.js
+          sed -i -E "s/__BUILD__/$build/g; s/src=(\"?)index\.js/src=\1index.js?v=$build/" site/index.html
           grep -F "index.js?v=$build" site/index.html
           ls -la site
       - uses: actions/upload-pages-artifact@v3
