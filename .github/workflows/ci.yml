@@ -39,8 +39,9 @@ jobs:
           mkdir site
           cp build-web/src/game/index.html build-web/src/game/index.js build-web/src/game/index.wasm site/
           build=${GITHUB_SHA::8}
-          sed -i "s/__BUILD__/$build/g; s/src=\"index.js\"/src=\"index.js?v=$build\"/" site/index.html
-          grep -o "index.js?v=[a-f0-9]*" site/index.html
+          grep -o "<script[^>]*index.js[^>]*>" site/index.html
+          sed -i -E "s/__BUILD__/$build/g; s/(src=.)index\.js/\1index.js?v=$build/" site/index.html
+          grep -F "index.js?v=$build" site/index.html
           ls -la site
       - uses: actions/upload-pages-artifact@v3
         with:
