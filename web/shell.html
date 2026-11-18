@@ -12,9 +12,13 @@
     #status { position: absolute; font-size: 14px; opacity: .7; }
     footer { position: fixed; bottom: 6px; font-size: 12px; opacity: .45; }
     footer a { color: inherit; }
+    #rotate { display: none; position: fixed; top: 12px; left: 0; right: 0; text-align: center; font-size: 14px; opacity: .8; }
+    @media (orientation: portrait) and (pointer: coarse) { #rotate { display: block; } }
+    canvas { touch-action: none; }
   </style>
 </head>
 <body>
+  <div id="rotate">Turn your phone sideways for a bigger view</div>
   <div id="status">Loading…</div>
   <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
   <footer>C++20 · raylib · WebAssembly · <a href="https://github.com/gigantic536wall/orbit-courier">source code</a></footer>

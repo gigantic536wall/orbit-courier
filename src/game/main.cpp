@@ -1,6 +1,7 @@
 // Orbit Courier: window setup and the main loop. Game rules live in oc_core, the screens in App.
 
 #include <cstdlib>
+#include <memory>
 #include <string>
 
 #include <raylib.h>
@@ -22,7 +23,9 @@ game::Capture captureFromEnvironment() {
     if (const char* frames = std::getenv("OC_FRAMES")) {
         c.frames = std::atoi(frames);
     }
-    c.briefing = std::getenv("OC_BRIEFING") != nullptr;
+    if (const char* screen = std::getenv("OC_SCREEN")) {
+        c.screen = screen;
+    }
     return c;
 }
 
@@ -36,19 +39,29 @@ void runFrame() { gApp->frame(); }
 } // namespace
 
 int main() {
+    const game::Capture capture = captureFromEnvironment();
+
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT);
+    SetTraceLogLevel(LOG_WARNING);
     InitWindow(1280, 720, "Orbit Courier");
     SetExitKey(KEY_NULL); // Esc pauses instead of quitting
+    if (capture.path == nullptr) {
+        InitAudioDevice(); // silent screenshot runs
+    }
 
-    game::App app(captureFromEnvironment());
+    auto app = std::make_unique<game::App>(capture);
 #if defined(__EMSCRIPTEN__)
-    gApp = &app;
+    gApp = app.get();
     emscripten_set_main_loop(runFrame, 0, 1);
 #else
     SetTargetFPS(144);
-    while (!WindowShouldClose() && app.frame()) {
+    while (!WindowShouldClose() && app->frame()) {
     }
 #endif
+    app.reset(); // unload sounds while the audio device is still open
+    if (IsAudioDeviceReady()) {
+        CloseAudioDevice();
+    }
     CloseWindow();
     return 0;
 }

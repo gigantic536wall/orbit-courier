@@ -1,4 +1,4 @@
-add_executable(orbit_courier main.cpp app.cpp)
+add_executable(orbit_courier main.cpp app.cpp render.cpp audio.cpp storage.cpp)
 target_link_libraries(orbit_courier PRIVATE oc_core oc_warnings raylib)
 
 if(MSVC)
@@ -21,6 +21,7 @@ if(EMSCRIPTEN)
         -sUSE_GLFW=3
         -sALLOW_MEMORY_GROWTH=1
         -sENVIRONMENT=web
+        "-sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$stringToNewUTF8"
         --shell-file ${PROJECT_SOURCE_DIR}/web/shell.html)
     set_property(TARGET orbit_courier APPEND PROPERTY LINK_DEPENDS ${PROJECT_SOURCE_DIR}/web/shell.html)
 endif()
