@@ -59,19 +59,19 @@ Audio::Audio() {
     }
     ready_ = true;
 
-    cues_[static_cast<int>(Cue::Click)] = synth(0.06f, [](float t) { return tone(t, 1400.0f) * envelope(t, 0.001f, 0.012f) * 0.5f; });
-    cues_[static_cast<int>(Cue::Pickup)] =
+    cues_[static_cast<std::size_t>(Cue::Click)] = synth(0.06f, [](float t) { return tone(t, 1400.0f) * envelope(t, 0.001f, 0.012f) * 0.5f; });
+    cues_[static_cast<std::size_t>(Cue::Pickup)] =
         synth(0.45f, [](float t) { return notes(t, {{0.0f, 880.0f}, {0.08f, 1320.0f}}, 0.12f); });
-    cues_[static_cast<int>(Cue::Deliver)] =
+    cues_[static_cast<std::size_t>(Cue::Deliver)] =
         synth(0.8f, [](float t) { return notes(t, {{0.0f, 660.0f}, {0.09f, 880.0f}, {0.18f, 1320.0f}}, 0.18f); });
-    cues_[static_cast<int>(Cue::Complete)] = synth(1.6f, [](float t) {
+    cues_[static_cast<std::size_t>(Cue::Complete)] = synth(1.6f, [](float t) {
         return notes(t, {{0.0f, 523.25f}, {0.12f, 659.25f}, {0.24f, 783.99f}, {0.36f, 1046.5f}, {0.36f, 523.25f}}, 0.45f);
     });
-    cues_[static_cast<int>(Cue::TooFast)] = synth(0.35f, [](float t) {
+    cues_[static_cast<std::size_t>(Cue::TooFast)] = synth(0.35f, [](float t) {
         const float buzz = std::tanh(3.0f * tone(t, 150.0f + 10.0f * tone(t, 30.0f)));
         return buzz * envelope(t, 0.005f, 0.15f) * 0.6f;
     });
-    cues_[static_cast<int>(Cue::Lost)] = synth(0.9f, [](float t) {
+    cues_[static_cast<std::size_t>(Cue::Lost)] = synth(0.9f, [](float t) {
         // Falling glide from 600 Hz: the phase is the integral of f(t) = 600 * e^(-1.4 t).
         const float phase = 600.0f * (1.0f - std::exp(-1.4f * t)) / 1.4f;
         return std::sin(kTau * phase) * envelope(t, 0.01f, 0.4f) * 0.6f;
@@ -79,7 +79,7 @@ Audio::Audio() {
     {
         Noise noise;
         float low = 0.0f;
-        cues_[static_cast<int>(Cue::Crash)] = synth(1.3f, [&](float t) {
+        cues_[static_cast<std::size_t>(Cue::Crash)] = synth(1.3f, [&](float t) {
             low += (noise.next() - low) * 0.08f; // one-pole low-pass: a dull rumble
             const float thump = tone(t, 55.0f) * envelope(t, 0.002f, 0.18f);
             return (low * 2.5f * envelope(t, 0.003f, 0.35f) + thump) * 0.8f;
@@ -109,7 +109,7 @@ Audio::~Audio() {
 
 void Audio::play(Cue cue) {
     if (ready_ && enabled_) {
-        PlaySound(cues_[static_cast<int>(cue)]);
+        PlaySound(cues_[static_cast<std::size_t>(cue)]);
     }
 }
 

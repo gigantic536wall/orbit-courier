@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 
 #include <raylib.h>
 
@@ -27,7 +28,7 @@ public:
 private:
     bool ready_ = false;
     bool enabled_ = true;
-    std::array<Sound, static_cast<int>(Cue::Count)> cues_{};
+    std::array<Sound, static_cast<std::size_t>(Cue::Count)> cues_{};
     Sound engine_{};
 };
 
