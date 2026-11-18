@@ -7,6 +7,7 @@
 #include <raylib.h>
 
 #include "audio.hpp"
+#include "oc/autopilot.hpp"
 #include "oc/levels.hpp"
 #include "oc/mission.hpp"
 #include "oc/progress.hpp"
@@ -37,6 +38,13 @@ struct Capture {
     int level = 0;
     int frames = 150;
     std::string screen; ///< empty = playing
+    // Demo recording (OC_RECORD=1): the autopilot flies the level, every `every`-th frame is saved as
+    // frame_NNNN.png in the working directory, at `speed` times real time.
+    bool record = false;
+    int every = 3;
+    float speed = 3.0f;
+
+    [[nodiscard]] bool active() const { return path != nullptr || record; }
 };
 
 class App {
@@ -110,6 +118,9 @@ private:
     std::optional<oc::Approach> approach_;
     std::vector<Star> stars_;
     oc::Input lastInput_;
+    std::optional<oc::HohmannPilot> pilot_; ///< drives demo recordings
+    int recorded_ = 0;
+    int resultFrames_ = 0;
 
     bool touchUi_ = false;
     int previousTouches_ = 0;

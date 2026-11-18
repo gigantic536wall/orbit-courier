@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 
+#include "oc/autopilot.hpp"
 #include "oc/levels.hpp"
 #include "oc/mission.hpp"
 
@@ -94,51 +95,6 @@ TEST_CASE("Hohmann transfer matches the textbook value") {
     CHECK(hohmannDeltaV(398600.0, 6678.0, 42164.0) == doctest::Approx(3.893).epsilon(0.005));
     CHECK(hohmannDeltaV(398600.0, 7000.0, 7000.0) == doctest::Approx(0.0));
 }
-
-namespace {
-
-/// Flies one Hohmann transfer between two circular, prograde station orbits around the same body:
-/// wait for the right phase angle, burn once (prograde to go up, retrograde to go down), coast.
-/// No corrections at arrival: if this docks, the level is solvable and the docking rules work.
-Mission flyHohmann(const Level& level) {
-    Mission mission(level);
-    const Job job = level.jobs.front();
-    const Station& from = level.stations[job.from];
-    const Station& to = level.stations[job.to];
-    const double mu = level.bodies[from.parent].mu;
-    const double r1 = from.orbitRadius;
-    const double r2 = to.orbitRadius;
-    const double a = (r1 + r2) / 2.0;
-    const double transfer = kPi * std::sqrt(a * a * a / mu);
-    const double w1 = from.angularSpeed;
-    const double w2 = to.angularSpeed;
-
-    // The target must be half a turn ahead of the departure point when the ship arrives.
-    const double synodic = kTau / std::abs(w1 - w2);
-    double wait = (to.phase + w2 * transfer - kPi - from.phase) / (w1 - w2);
-    wait = std::fmod(std::fmod(wait, synodic) + synodic, synodic);
-
-    const double targetSpeed = circularSpeed(mu, r1) * std::sqrt(r2 / a);
-    const bool raise = r2 > r1;
-    bool burned = false;
-    const int maxSteps = static_cast<int>((wait + transfer + 20.0) / World::kStep);
-    for (int i = 0; i < maxSteps && mission.state() == MissionState::Flying; ++i) {
-        const Ship& s = mission.world().ship();
-        const double prograde = std::atan2(s.velocity.y, s.velocity.x);
-        const double desired = raise ? prograde : prograde + kPi;
-        const double error = std::remainder(desired - s.angle, kTau);
-        Input input{.turn = std::abs(error) > 0.01 ? (error > 0 ? 1 : -1) : 0};
-        if (!burned && mission.world().time() >= wait) {
-            const double speed = s.velocity.length();
-            input.thrust = raise ? speed < targetSpeed : speed > targetSpeed;
-            burned = !input.thrust;
-        }
-        mission.step(input);
-    }
-    return mission;
-}
-
-} // namespace
 
 namespace {
 

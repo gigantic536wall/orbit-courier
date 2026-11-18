@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(OrbitCourier VERSION 0.1.0 DESCRIPTION "Gravity-assist delivery game" LANGUAGES C CXX)
+project(OrbitCourier VERSION 1.0.0 DESCRIPTION "Gravity-assist delivery game" LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

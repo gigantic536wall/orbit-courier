@@ -33,7 +33,7 @@ void addRow(std::vector<Button>& out, float y, std::initializer_list<std::pair<c
 
 App::App(Capture capture)
     : capture_(std::move(capture)),
-      progress_(capture_.path != nullptr ? oc::Progress(levels_.size())
+      progress_(capture_.active() ? oc::Progress(levels_.size())
                                          : oc::Progress::parse(loadText(kSaveKey), levels_.size())),
       mission_(levels_.front()) {
     std::uint32_t seed = 0x9E3779B9u;
@@ -45,13 +45,17 @@ App::App(Capture capture)
     audio_.setEnabled(progress_.soundOn);
     menuSelection_ = progress_.suggestedLevel();
 
-    if (capture_.path == nullptr || capture_.screen == "menu") {
+    if (!capture_.active() || capture_.screen == "menu") {
         openMenu();
         return;
     }
     startLevel(std::min<std::size_t>(static_cast<std::size_t>(std::max(capture_.level, 0)), levels_.size() - 1));
     if (capture_.screen != "briefing") {
         launch();
+    }
+    if (capture_.record) {
+        pilot_.emplace(levels_[levelIndex_]);
+        zoom_ = 0.85f;
     }
 }
 
@@ -127,7 +131,7 @@ void App::perform(Action action) {
 }
 
 void App::saveProgress() {
-    if (capture_.path == nullptr) {
+    if (!capture_.active()) {
         saveText(kSaveKey, progress_.serialize());
     }
 }
@@ -136,7 +140,7 @@ void App::saveProgress() {
 // Input
 
 oc::Input App::flightInput() const {
-    if (capture_.path != nullptr) {
+    if (capture_.path != nullptr && !capture_.record) {
         return {.turn = frameCount_ > 40 && frameCount_ < 62 ? -1 : 0, .thrust = frameCount_ > 62 && frameCount_ < 100};
     }
     oc::Input input;
@@ -395,6 +399,9 @@ void App::simulate(float frameTime) {
     accumulator_ += std::min(static_cast<double>(frameTime), 0.25);
     lastInput_ = flightInput();
     while (accumulator_ >= oc::World::kStep) {
+        if (pilot_) {
+            lastInput_ = pilot_->next(mission_);
+        }
         mission_.step(lastInput_);
         accumulator_ -= oc::World::kStep;
     }
@@ -480,7 +487,7 @@ void App::updateCamera(float frameTime) {
 
 bool App::frame() {
     ++frameCount_;
-    const float dt = capture_.path != nullptr ? 1.0f / 60.0f : GetFrameTime();
+    const float dt = capture_.record ? capture_.speed / 60.0f : capture_.active() ? 1.0f / 60.0f : GetFrameTime();
     handleInput();
     handlePointer();
     simulate(dt);
@@ -516,6 +523,13 @@ bool App::frame() {
     drawButtons();
     EndDrawing();
 
+    if (capture_.record) {
+        if (frameCount_ % capture_.every == 0) {
+            TakeScreenshot(TextFormat("frame_%04d.png", recorded_++));
+        }
+        resultFrames_ += screen_ == Screen::Result ? 1 : 0;
+        return resultFrames_ < 50 && frameCount_ < 4000;
+    }
     if (capture_.path != nullptr && frameCount_ >= capture_.frames) {
         TakeScreenshot(capture_.path);
         return false;

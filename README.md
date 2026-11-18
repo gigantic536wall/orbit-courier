@@ -5,11 +5,11 @@
 A small space game about delivering parcels between moons with a weak engine and a lot of gravity.
 Written in modern C++20 with [raylib](https://www.raylib.com/), it runs natively on Windows, Linux and macOS and in the browser via WebAssembly.
 
-**▶ Play in the browser:** [gigantic536wall.github.io/orbit-courier](https://gigantic536wall.github.io/orbit-courier/)
+**▶ Play in the browser:** [gigantic536wall.github.io/orbit-courier](https://gigantic536wall.github.io/orbit-courier/)  
+**⬇ Download** for Windows, macOS and Linux: [latest release](https://github.com/gigantic536wall/orbit-courier/releases/latest)
 
-> 🚧 Work in progress: the game is complete and playable; downloadable desktop builds come next.
-
-<p align="center"><img src="docs/screenshot.png" width="720" alt="Level 1: the drone leaves its station; the trajectory preview and the closest approach to the target station are shown"></p>
+<p align="center"><img src="docs/demo.gif" width="720" alt="Level 1 flown by the built-in Hohmann autopilot: one burn, a coast along the transfer ellipse, docking and three stars"></p>
+<p align="center"><sub>Recorded from the game itself: the built-in autopilot flies level 1 with a single burn (<code>OC_RECORD=1</code>).</sub></p>
 <p align="center"><img src="docs/menu.png" width="420" alt="Level select with stars and locked levels"></p>
 
 ## Gameplay
@@ -50,6 +50,7 @@ scarce, so the trick is to use gravity: fall towards a planet to speed up, and l
 - **Clean separation:** all game rules live in `oc_core`, a library without any graphics dependency; the raylib front end only reads input and draws.
 - **Strict build:** C++20, warnings as errors (`/W4 /WX`, `-Wall -Wextra -Wconversion -Werror`), no fused multiply-add for reproducible floating point.
 - **CI on three platforms** (Windows/MSVC, Linux/GCC, macOS/Clang) plus an Emscripten build that is deployed to GitHub Pages on every push.
+- **Releases from a tag:** pushing `v*` builds Windows (static runtime, no installer), a universal macOS binary, Linux and a web package, runs the tests on each, and publishes them as a GitHub Release.
 
 ## Build
 
@@ -86,7 +87,7 @@ web/        HTML shell for the WebAssembly build
 - [x] Flight model, gravity, collisions, trajectory preview, sandbox, CI + web build
 - [x] Stations, docking, deliveries, ten levels, scoring and stars
 - [x] Level select, saved progress, synthesized sound, particles, touch controls (38 test cases)
-- [ ] Release builds for Windows/Linux/macOS
+- [x] Release builds for Windows, Linux and macOS (GitHub Actions, on every version tag)
 
 ## License
 

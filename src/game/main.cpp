@@ -26,6 +26,7 @@ game::Capture captureFromEnvironment() {
     if (const char* screen = std::getenv("OC_SCREEN")) {
         c.screen = screen;
     }
+    c.record = std::getenv("OC_RECORD") != nullptr;
     return c;
 }
 
@@ -45,7 +46,7 @@ int main() {
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(1280, 720, "Orbit Courier");
     SetExitKey(KEY_NULL); // Esc pauses instead of quitting
-    if (capture.path == nullptr) {
+    if (!capture.active()) {
         InitAudioDevice(); // silent screenshot runs
     }
 

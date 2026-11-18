@@ -1,0 +1,116 @@
+name: Release
+
+# Pushing a tag like v1.0.0 builds the game for Windows, Linux, macOS and the web
+# and publishes the packages as a GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows-x64
+          - os: ubuntu-latest
+            name: linux-x64
+          - os: macos-latest
+            name: macos-universal
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install raylib dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libwayland-dev libxkbcommon-dev
+      - name: Configure
+        shell: bash
+        run: |
+          # Static C++ runtime on Windows (no Visual C++ Redistributable needed), one binary for
+          # Intel and Apple Silicon Macs.
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+      - run: cmake --build build --config Release --parallel
+      - run: ctest --test-dir build -C Release --output-on-failure
+      - name: Package
+        shell: bash
+        run: |
+          dir=orbit-courier-${GITHUB_REF_NAME}-${{ matrix.name }}
+          mkdir "$dir"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cp build/src/game/Release/orbit_courier.exe "$dir/"
+          else
+            cp build/src/game/orbit_courier "$dir/"
+            chmod +x "$dir/orbit_courier"
+          fi
+          cp packaging/README.txt LICENSE "$dir/"
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            tar czf "$dir.tar.gz" "$dir"
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            7z a -tzip "$dir.zip" "$dir" > /dev/null
+          else
+            zip -qr "$dir.zip" "$dir"
+          fi
+          ls -la orbit-courier-*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            orbit-courier-*.zip
+            orbit-courier-*.tar.gz
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+      - run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release -DOC_BUILD_TESTS=OFF
+      - run: cmake --build build-web --parallel
+      - name: Package
+        run: |
+          dir=orbit-courier-${GITHUB_REF_NAME}-web
+          mkdir "$dir"
+          cp build-web/src/game/index.html build-web/src/game/index.js build-web/src/game/index.wasm LICENSE "$dir/"
+          sed -i -E "s/__BUILD__/${GITHUB_REF_NAME}/g" "$dir/index.html"
+          zip -qr "$dir.zip" "$dir"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: orbit-courier-*.zip
+
+  publish:
+    needs: [desktop, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          cat > notes.md <<NOTES
+          **Play in the browser:** https://gigantic536wall.github.io/orbit-courier/
+
+          | Download | Platform |
+          | --- | --- |
+          | \`orbit-courier-${GITHUB_REF_NAME}-windows-x64.zip\` | Windows 10/11, 64-bit (no installer, unzip and run) |
+          | \`orbit-courier-${GITHUB_REF_NAME}-macos-universal.zip\` | macOS 11+, Intel and Apple Silicon (unsigned: right-click, Open) |
+          | \`orbit-courier-${GITHUB_REF_NAME}-linux-x64.tar.gz\` | Linux x86-64 with OpenGL 3.3 |
+          | \`orbit-courier-${GITHUB_REF_NAME}-web.zip\` | Browser build to host yourself |
+
+          Ten levels, three stars each. Controls and details are in README.txt inside each package.
+          NOTES
+          gh release create "$GITHUB_REF_NAME" dist/* --title "Orbit Courier ${GITHUB_REF_NAME}" --notes-file notes.md
